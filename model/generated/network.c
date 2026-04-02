@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    network.c
   * @author  AST Embedded Analytics Research Platform
-  * @date    2026-04-02T12:44:46+0530
+  * @date    2026-04-02T14:36:50+0530
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -152,8 +152,8 @@
 
 
 /*****************************************************************************/
-#define _STAI_NETWORK_MODEL_SIGNATURE     "0x0ce95c9d6ecb69e164007b2941a36128"
-#define _STAI_NETWORK_DATETIME            "2026-04-02T12:44:46+0530"
+#define _STAI_NETWORK_MODEL_SIGNATURE     "0x1c23f505a5a46cb54774400f0b300131"
+#define _STAI_NETWORK_DATETIME            "2026-04-02T14:36:50+0530"
 #define _STAI_NETWORK_COMPILE_DATETIME    __DATE__ " " __TIME__
 
 #define _STAI_CONTEXT_ALIGNMENT        STAI_NETWORK_CONTEXT_ALIGNMENT
@@ -610,11 +610,11 @@ stai_return_code stai_network_run(
       .n_elements = 1,
     };
   
-  _STAI_NETWORK_EVENT_NODE_START_CB(6, 1, {(stai_ptr) (float*)(net_ctx->_activations[0] + 0)});
+  _STAI_NETWORK_EVENT_NODE_START_CB(7, 1, {(stai_ptr) (float*)(net_ctx->_activations[0] + 0)});
     
   forward_lite_dense_if32of32wf32((forward_lite_dense_if32of32wf32_args*)&arg_30f51e);
     
-  _STAI_NETWORK_EVENT_NODE_STOP_CB(6, 1, {(stai_ptr) (float*)(net_ctx->_activations[0] + 512)});
+  _STAI_NETWORK_EVENT_NODE_STOP_CB(7, 1, {(stai_ptr) (float*)(net_ctx->_activations[0] + 512)});
   }
   /* LITE_KERNEL_SECTION END dense_1_dense */
   /* LITE_KERNEL_SECTION BEGIN dense_1 */
@@ -622,11 +622,11 @@ stai_return_code stai_network_run(
       ai_handle dense_1_t_out_0_ptr_handle = (ai_handle)(net_ctx->_outputs[0] + 0);
     const ai_handle dense_1_t_in_0_ptr_const_handle = (ai_handle)(net_ctx->_activations[0] + 512);
   
-  _STAI_NETWORK_EVENT_NODE_START_CB(6, 1, {(stai_ptr) dense_1_t_in_0_ptr_const_handle});
+  _STAI_NETWORK_EVENT_NODE_START_CB(7, 1, {(stai_ptr) dense_1_t_in_0_ptr_const_handle});
     
   forward_lite_nl_softmax_if32of32(dense_1_t_out_0_ptr_handle, dense_1_t_in_0_ptr_const_handle, dense_1_t_in_0_shape_ch_prod_const_s32, 1, 11);
     
-  _STAI_NETWORK_EVENT_NODE_STOP_CB(6, 1, {(stai_ptr) dense_1_t_out_0_ptr_handle});
+  _STAI_NETWORK_EVENT_NODE_STOP_CB(7, 1, {(stai_ptr) dense_1_t_out_0_ptr_handle});
   }
   /* LITE_KERNEL_SECTION END dense_1 */
   return net_ctx->_return_code;

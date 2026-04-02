@@ -1,5 +1,5 @@
 ST Edge AI Core v3.0.0-20426 123672867
-Created date          : 2026-04-02 12:44:47
+Created date          : 2026-04-02 14:36:51
 Parameters            : generate --model C:\STM32_OTA1\model\mnist.keras --target stm32f4 --output C:\STM32_OTA1\model\generated --name network
 
 Exec/report summary (generate)
@@ -15,7 +15,7 @@ workspace dir      :   C:\STM32_OTA1\st_ai_ws
 output dir         :   C:\STM32_OTA1\model\generated                                    
 model_fmt          :   float                                                            
 model_name         :   mnist                                                            
-model_hash         :   0x0ce95c9d6ecb69e164007b2941a36128                               
+model_hash         :   0x1c23f505a5a46cb54774400f0b300131                               
 params #           :   225,163 items (879.54 KiB)                                       
 ----------------------------------------------------------------------------------------
 input 1/1          :   'input_0', f32(1x28x28x1), 3.06 KBytes, activations              
@@ -47,7 +47,7 @@ m_id   layer (type,original)                  oshape                 param/size 
 5      dense_dense (Dense, Dense)             [b:1,c:128]            204,928/819,712       204,928           flatten   |                   +128(+0.1%)         Dense_/Nonlinearity_[6, 7]      
        dense (Nonlinearity, Dense)            [b:1,c:128]                                      128       dense_dense   |                   -128(-100.0%)       
 ------ -------------------------------------- ---------------------- ----------------- ----------- ----------------- --- ----------------- ------------------- ------------------------------- 
-6      dense_1_dense (Dense, Dense)           [b:1,c:11]             1,419/5,676             1,419             dense   |                   +165(+11.6%)        Dense_/Nonlinearity_[o][8, 9]   
+7      dense_1_dense (Dense, Dense)           [b:1,c:11]             1,419/5,676             1,419             dense   |                   +165(+11.6%)        Dense_/Nonlinearity_[o][8, 9]   
        dense_1 (Nonlinearity, Dense)          [b:1,c:11]                                       165     dense_1_dense   |                   -165(-100.0%)       
 ------ -------------------------------------- ---------------------- ----------------- ----------- ----------------- --- ----------------- ------------------- ------------------------------- 
 model/c-model: macc=2,689,104/2,689,104  weights=900,652/900,652  activations=--/89,700 io=--/0
@@ -129,12 +129,12 @@ c_id   name (*_layer)    id   layer_type      macc      rom      tensors        
 7      dense             5    Nonlinearity    128       0        I: dense_dense_output         f32(1x128) (15)        
                                                                  O: dense_output               f32(1x128) (17)        
 ------ ----------------- ---- --------------- --------- -------- ----------------------------- ---------------------- 
-8      dense_1_dense     6    Dense           1419      5676     I: dense_output               f32(1x128) (17)        
+8      dense_1_dense     7    Dense           1419      5676     I: dense_output               f32(1x128) (17)        
                                                                  W: dense_1_dense_weights      f32(11x128) (12)       
                                                                  W: dense_1_dense_bias         f32(11) (10)           
                                                                  O: dense_1_dense_output       f32(1x11) (11)         
 ------ ----------------- ---- --------------- --------- -------- ----------------------------- ---------------------- 
-9      dense_1           6    Nonlinearity    165       0        I: dense_1_dense_output       f32(1x11) (11)         
+9      dense_1           7    Nonlinearity    165       0        I: dense_1_dense_output       f32(1x11) (11)         
                                                                  O: dense_1_output             f32(1x11) (13)         
 ------ ----------------- ---- --------------- --------- -------- ----------------------------- ---------------------- 
 
@@ -152,8 +152,8 @@ c_id    m_id   name (type)                        #op           type
 5       3      max_pooling2d_1 (Pool)           6,400   smul_f32_f32 
 6       5      dense_dense (Dense)            204,928   smul_f32_f32 
 7       5      dense (Nonlinearity)               128     op_f32_f32 
-8       6      dense_1_dense (Dense)            1,419   smul_f32_f32 
-9       6      dense_1 (Nonlinearity)             165     op_f32_f32 
+8       7      dense_1_dense (Dense)            1,419   smul_f32_f32 
+9       7      dense_1 (Nonlinearity)             165     op_f32_f32 
 ------- ------ -------------------------- ----------- -------------- 
 total                                       2,689,104 
 
@@ -173,7 +173,7 @@ m_id   name              c_macc                    c_rom                     c_i
 2      conv2d_1_conv2d   ||||||||||||||||  83.2%   ||                 8.2%   [3, 4]   
 3      max_pooling2d_1   |                  0.2%   |                  0.0%   [5]      
 5      dense_dense       ||                 7.6%   ||||||||||||||||  91.0%   [6, 7]   
-6      dense_1_dense     |                  0.1%   |                  0.6%   [8, 9]   
+7      dense_1_dense     |                  0.1%   |                  0.6%   [8, 9]   
 ------ ----------------- ------------------------- ------------------------- -------- 
 macc=2,689,104 weights=900,652 act=89,700 ram_io=0
 
