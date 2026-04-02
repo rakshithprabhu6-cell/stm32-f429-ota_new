@@ -11,7 +11,7 @@ UART_PORT     = "COM4"
 BAUD          = 115200
 RETRAIN_EVERY = 5    
 
-GITHUB_REPO = "rakshithprabhu6-cell/stm32-f429-ota"
+GITHUB_REPO = "rakshithprabhu6-cell/stm32-f429-ota_new"
 
 CUBIDE = (
     r"C:\Users\HP\AppData\Local\Temp"
