@@ -9,6 +9,7 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='repla
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
+import time
 
 # ── Paths (relative — runs inside GitHub Actions) ────────
 CORRECTIONS = Path("corrections")
@@ -40,7 +41,7 @@ def make_class_weights(y_train):
 
     THIS formula: scales automatically as dataset grows with corrections.
     """
-    n_per_digit = int(np.sum(y_train == 0))   # one digit class count
+    n_per_digit = int(np.mean([np.sum(y_train == d) for d in range(10)]))  # one digit class count
     n_invalid   = int(np.sum(y_train == 10))
 
     if n_invalid == 0 or n_per_digit == 0:
@@ -126,12 +127,10 @@ def load_invalid_samples():
         print(f"      EMNIST: {len(x_inv)}")
         return x_inv, y_inv
     except Exception as e:
-        print(f"      EMNIST failed ({e}) — using noise")
-        n     = MNIST_PER_DIGIT * 10
-        x_inv = np.random.rand(n, 28, 28, 1).astype("float32")
-        y_inv = np.full(n, 10, dtype=np.int32)
-        print(f"      Noise fallback: {n}")
-        return x_inv, y_inv
+      print(f"      EMNIST failed ({e})")
+      print("      ERROR: no invalid samples available.")
+      print("      Commit A_Z Handwritten Data.csv to repo root.")
+      raise RuntimeError("No invalid sample source found") from e
 
 
 def retrain_model():
@@ -291,6 +290,13 @@ def retrain_model():
     status = "COMPLETE  all classes >= 90%" if all_ok else "WARNING  some classes below 90%"
     print(f"\n  {status}")
     print(f"  Saved -> {MODEL_PATH}")
+     # Archive and clear corrections so stale samples don't compound
+    archive_dir = CORRECTIONS.parent / "corrections_archive"
+    archive_dir.mkdir(exist_ok=True)
+    ts_tag = int(time.time())
+    for f in CORRECTIONS.glob("*.npy"):
+        f.rename(archive_dir / f"{ts_tag}_{f.name}")
+    print(f"  Corrections archived to {archive_dir}")
 
 
 if __name__ == "__main__":

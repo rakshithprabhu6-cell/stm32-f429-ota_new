@@ -2,7 +2,7 @@ import os, serial, numpy as np
 import time, requests, base64, subprocess, io
 from pathlib import Path
 from threading import Thread
-
+import shutil
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -212,8 +212,12 @@ def handle_sample(label, pixels):
     if firmware_url:
         bin_path = download_firmware(firmware_url)
         if bin_path:
-            flash_board(bin_path)
-            print("\n✅ Board updated with cloud-trained model!")
+        # Copy cloud model so pipeline converts the new one
+          local_model = Path(r"C:\STM32_OTA1\model\mnist.keras")
+          shutil.copy(bin_path, str(local_model))
+          print(f"[CLOUD] Copied cloud model -> {local_model}")
+          flash_board(bin_path)
+          print("\n✅ Board updated with cloud-trained model!")
         else:
             print("[CLOUD] Download failed")
     else:
