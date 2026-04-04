@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - 'corrections/**'
-      - 'invalid_samples/**'
+      - 'model/mnist.keras'
 
 concurrency:
   group: retrain
@@ -20,7 +20,33 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: pip install tensorflow==2.18.0 numpy==2.0.2 Pillow==10.4.0 keras==3.5.0 pandas tensorflow-datasets importlib-resources scikit-learn
+        run: pip install tensorflow==2.18.0 numpy==2.0.2 Pillow==10.4.0 keras==3.5.0 pandas scikit-learn kaggle
+
+      - name: Download A_Z CSV from Kaggle
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          kaggle datasets download -d sachinpatel21/az-handwritten-alphabets-in-csv-format -p . --unzip
+          ls -la *.csv || echo "CSV not found after download"
+          # Rename to expected filename if needed
+          find . -name "*.csv" -maxdepth 1 | head -5
+
+      - name: Verify CSV exists
+        run: |
+          if [ ! -f "A_Z Handwritten Data.csv" ]; then
+            # Try alternate filename
+            CSV=$(find . -name "*.csv" -maxdepth 1 | head -1)
+            if [ -n "$CSV" ]; then
+              cp "$CSV" "A_Z Handwritten Data.csv"
+              echo "Renamed $CSV to A_Z Handwritten Data.csv"
+            else
+              echo "ERROR: No CSV found!"
+              exit 1
+            fi
+          fi
+          echo "CSV ready: $(wc -l < 'A_Z Handwritten Data.csv') lines"
+
       - name: Train
         env:
           PYTHONIOENCODING: utf-8
