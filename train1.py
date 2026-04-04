@@ -17,45 +17,30 @@ MODEL_PATH  = Path("model/mnist.keras")
 BASE_PATH   = Path("model/mnist_base.keras")
 MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-NUM_CLASSES       = 11
-MNIST_PER_DIGIT   = 1000   # digits per class  → 10,000 total
-LETTERS_PER_CLASS = 200    # per A-Z letter    →  5,200 total invalid
+NUM_CLASSES = 11
+
+
+MNIST_PER_DIGIT   = 1000   
+LETTERS_PER_CLASS = 400    
+                            
 
 
 def make_class_weights(y_train):
-    """
-    Equal-total-loss weighting.
-
-    Goal: total loss contribution of invalid class == total loss of ONE digit class.
-    Formula: w_invalid = n_per_digit / n_invalid
-
-    WHY NOT compute_class_weight('balanced'):
-      With 1000 samples per digit and 4700 invalid, 'balanced' gives
-      invalid a weight of 0.28 — DOWNWEIGHTING it. The model barely
-      penalises invalid mistakes and collapses to predicting everything
-      as invalid (or ignores the class entirely).
-
-    WHY NOT hardcoded cw[10] = 15.0:
-      Massive over-penalty → model predicts everything as invalid
-      to minimise the enormous loss on those samples.
-
-    THIS formula: scales automatically as dataset grows with corrections.
-    """
-    n_per_digit = int(np.mean([np.sum(y_train == d) for d in range(10)]))  # one digit class count
+    
+    n_per_digit = int(np.mean([np.sum(y_train == d) for d in range(10)]))
     n_invalid   = int(np.sum(y_train == 10))
 
     if n_invalid == 0 or n_per_digit == 0:
         return {i: 1.0 for i in range(NUM_CLASSES)}
-
     w_invalid = n_per_digit / n_invalid
     cw = {i: 1.0 for i in range(10)}
     cw[10] = w_invalid
 
-    print("\n      Class weights (equal-total-loss formula):")
+    print("\n      Class weights:")
     print(f"        Digits 0-9  : 1.0000  ({n_per_digit} samples each)")
     print(f"        Invalid(10) : {w_invalid:.4f}  ({n_invalid} samples)")
-    print(f"        Loss check  -> digit: {n_per_digit * 1.0:.0f}  "
-          f"invalid: {n_invalid * w_invalid:.0f}  (should match)")
+    print(f"        Loss check  -> digit: {n_per_digit*1.0:.0f}  "
+          f"invalid: {n_invalid*w_invalid:.0f}  (should match)")
     return cw
 
 
@@ -91,7 +76,7 @@ def load_corrections():
 
 
 def load_invalid_samples():
-    """Load A-Z letters as class 10. Falls back to EMNIST then noise."""
+    """Load A-Z letters as class 10. Falls back to EMNIST."""
     CSV_LOCAL = r"C:\Users\HP\Downloads\archive (8)\A_Z Handwritten Data\A_Z Handwritten Data.csv"
     CSV_CLOUD = "A_Z Handwritten Data.csv"
     CSV = CSV_LOCAL if os.path.exists(CSV_LOCAL) else \
@@ -111,7 +96,7 @@ def load_invalid_samples():
             y_inv.append(np.full(len(idx), 10, dtype=np.int32))
         x_inv = np.concatenate(x_inv)
         y_inv = np.concatenate(y_inv)
-        print(f"      A-Z letters: {len(x_inv)}  ({LETTERS_PER_CLASS}x26)")
+        print(f"      A-Z letters: {len(x_inv)}  ({LETTERS_PER_CLASS}×26)")
         return x_inv, y_inv
 
     print("      CSV not found — trying EMNIST...")
@@ -127,10 +112,10 @@ def load_invalid_samples():
         print(f"      EMNIST: {len(x_inv)}")
         return x_inv, y_inv
     except Exception as e:
-      print(f"      EMNIST failed ({e})")
-      print("      ERROR: no invalid samples available.")
-      print("      Commit A_Z Handwritten Data.csv to repo root.")
-      raise RuntimeError("No invalid sample source found") from e
+        print(f"      EMNIST failed ({e})")
+        print("      ERROR: no invalid samples available.")
+        print("      Commit A_Z Handwritten Data.csv to repo root.")
+        raise RuntimeError("No invalid sample source found") from e
 
 
 def retrain_model():
@@ -162,12 +147,13 @@ def retrain_model():
     print(f"      Invalid corrections: {invalid_count}")
 
     if len(cx) > 0:
-        rep = max(5, 50 // max(len(cx), 1))
+        
+        rep = min(5, max(1, 20 // max(len(cx), 1)))
         cx  = np.repeat(cx, rep, axis=0)
         cy  = np.repeat(cy, rep, axis=0)
         sx  = np.concatenate([sx, cx])
         sy  = np.concatenate([sy, cy])
-        print(f"      Corrections added: {len(cx)}  (x{rep} repeats)")
+        print(f"      Corrections added: {len(cx)}  (×{rep} repeats)")
     else:
         print("      No corrections found")
 
@@ -195,14 +181,14 @@ def retrain_model():
         label = f"Digit {c}" if c < 10 else "Invalid"
         print(f"        class {c:>2}  {label:>9} : {n}")
 
-    # ── Correct class weights ────────────────────────────
+    # ── Class weights ────────────────────────────────────
     cw = make_class_weights(sy)
 
     # ── [4] Load or build model ──────────────────────────
     print("\n[4/4] Loading model...")
     if MODEL_PATH.exists():
         print("      Fine-tuning existing model...")
-        model  = tf.keras.models.load_model(str(MODEL_PATH))
+        model = tf.keras.models.load_model(str(MODEL_PATH))
         model.compile(
             optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4),
             loss      = "sparse_categorical_crossentropy",
@@ -212,7 +198,7 @@ def retrain_model():
 
     elif BASE_PATH.exists():
         print("      Loading base model...")
-        model  = tf.keras.models.load_model(str(BASE_PATH))
+        model = tf.keras.models.load_model(str(BASE_PATH))
         model.compile(
             optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3),
             loss      = "sparse_categorical_crossentropy",
@@ -277,7 +263,7 @@ def retrain_model():
             continue
         cls_acc = np.mean(preds[idx_cls] == cls) * 100
         label   = f"Digit {cls}" if cls < 10 else "Invalid(A-Z)"
-        flag    = "" if cls_acc >= 90 else "  WARNING LOW"
+        flag    = "" if cls_acc >= 90 else "  *** WARNING LOW ***"
         if cls_acc < 90:
             all_ok = False
         print(f"    {label:>12} : {cls_acc:5.1f}%  ({len(idx_cls)} samples){flag}")
@@ -290,7 +276,8 @@ def retrain_model():
     status = "COMPLETE  all classes >= 90%" if all_ok else "WARNING  some classes below 90%"
     print(f"\n  {status}")
     print(f"  Saved -> {MODEL_PATH}")
-     # Archive and clear corrections so stale samples don't compound
+
+    # Archive corrections so stale samples don't compound
     archive_dir = CORRECTIONS.parent / "corrections_archive"
     archive_dir.mkdir(exist_ok=True)
     ts_tag = int(time.time())

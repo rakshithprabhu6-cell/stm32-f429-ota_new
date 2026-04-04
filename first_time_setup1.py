@@ -14,52 +14,13 @@ Path(r"C:\STM32_OTA1\corrections").mkdir(parents=True,     exist_ok=True)
 Path(r"C:\STM32_OTA1\model\generated").mkdir(parents=True, exist_ok=True)
 Path(r"C:\STM32_OTA1\invalid_samples").mkdir(parents=True, exist_ok=True)
 
-NUM_CLASSES    = 11
-MODEL          = r"C:\STM32_OTA1\model\mnist.keras"
-BASE_MODEL     = r"C:\STM32_OTA1\model\mnist_base.keras"
-AZ_CSV         = r"C:\Users\HP\Downloads\archive (8)\A_Z Handwritten Data\A_Z Handwritten Data.csv"
-
-# 2300 x 26 = 59,800 invalid  vs  60,000 MNIST digits  → nearly 1:1
-MAX_PER_LETTER = 2300
+NUM_CLASSES = 11
+MODEL       = r"C:\STM32_OTA1\model\mnist.keras"
+BASE_MODEL  = r"C:\STM32_OTA1\model\mnist_base.keras"
+AZ_CSV      = r"C:\Users\HP\Downloads\archive (8)\A_Z Handwritten Data\A_Z Handwritten Data.csv"
 
 
-def make_class_weights(y_all):
-    """
-    Equal-total-loss weighting.
-
-    Goal: total loss contribution of invalid class == total loss of ONE digit class.
-    Formula: w_invalid = n_per_digit / n_invalid
-
-    WHY NOT compute_class_weight('balanced'):
-      With 60,000 digits and 53,820 invalid, 'balanced' gives:
-        digit   weight ~ 0.84   (downweights digits!)
-        invalid weight ~ 0.96
-      Both sides end up near-equal by accident but the absolute values
-      are wrong — the model gets almost no gradient signal.
-
-    WHY NOT hardcoded cw[10] = 15.0:
-      Massively over-penalises invalid mistakes → model predicts
-      everything as invalid to play it safe.
-
-    THIS formula auto-adjusts as dataset size changes.
-    """
-    n_per_digit = int(np.sum(y_all == 0))    # one digit class count
-    n_invalid   = int(np.sum(y_all == 10))
-
-    if n_invalid == 0 or n_per_digit == 0:
-        return {i: 1.0 for i in range(NUM_CLASSES)}
-
-    w_invalid = n_per_digit / n_invalid
-    cw = {i: 1.0 for i in range(10)}
-    cw[10] = w_invalid
-
-    print("\n      Class weights (equal-total-loss formula):")
-    print(f"        Digits 0-9  : 1.0000  ({n_per_digit} samples each)")
-    print(f"        Invalid(10) : {w_invalid:.4f}  ({n_invalid} samples)")
-    print(f"        Loss check  -> digit: {n_per_digit * 1.0:.0f}  "
-          f"invalid: {n_invalid * w_invalid:.0f}  (should match)")
-    return cw
-
+MAX_PER_LETTER = 600   # was 2300 — that caused 59,800 invalid vs 6,000/digit
 
 print("=" * 50)
 print("  STM32 OTA1 — First Time Setup")
@@ -123,8 +84,19 @@ for c in range(11):
     label = f"Digit {c}" if c < 10 else "Invalid(A-Z)"
     print(f"        class {c:>2}  {label:>12} : {n}")
 
-# ── Correct class weights ────────────────────────────────
-cw = make_class_weights(y_all)
+
+n_per_digit = int(np.sum(y_all == 0))
+n_invalid   = int(np.sum(y_all == 10))
+w_invalid   = n_per_digit / n_invalid
+
+cw = {i: 1.0 for i in range(10)}
+cw[10] = w_invalid
+
+print(f"\n      Class weights:")
+print(f"        Digits 0-9  : 1.0000  ({n_per_digit} each)")
+print(f"        Invalid(10) : {w_invalid:.4f}  ({n_invalid} total)")
+print(f"        Loss check  -> digit: {n_per_digit*1.0:.0f}  "
+      f"invalid: {n_invalid*w_invalid:.0f}  (should match)")
 
 # ── [4/4] Build & Train ──────────────────────────────────
 print("\n[4/4] Building model...")
@@ -167,7 +139,7 @@ print("      Do NOT close this window\n")
 
 model.fit(
     x_all, y_all,
-    epochs          = 10,
+    epochs          = 15,   # was 10 — more epochs for better convergence
     batch_size      = 128,
     validation_data = (x_val, y_val),
     class_weight    = cw,
@@ -190,7 +162,7 @@ for cls in range(11):
         continue
     cls_acc = np.mean(preds[idx_cls] == cls) * 100
     label   = f"Digit {cls}" if cls < 10 else "Invalid(A-Z)"
-    flag    = "" if cls_acc >= 90 else "  WARNING LOW"
+    flag    = "" if cls_acc >= 90 else "  *** WARNING LOW ***"
     if cls_acc < 90:
         all_ok = False
     print(f"    {label:>12} : {cls_acc:5.1f}%  ({len(idx_cls)} samples){flag}")
@@ -204,12 +176,12 @@ if all_ok:
     print("  SETUP COMPLETE  —  all classes >= 90%")
 else:
     print("  WARNING  —  some classes below 90%")
-    print("  Try re-running or reducing MAX_PER_LETTER")
+    print("  If Invalid < 90%: reduce MAX_PER_LETTER to 400")
+    print("  If Digits  < 90%: increase MAX_PER_LETTER to 800")
 print("=" * 50)
 print(f"  mnist.keras       <- used by pipeline")
 print(f"  mnist_base.keras  <- backup (never touched)")
 print()
 print("  Now run in order:")
-print("  1.  python train.py          <- test fine-tune")
-print("  2.  python auto_pipeline.py  <- start OTA")
+print("  1.  python auto_pipeline1.py  <- start OTA")
 print("=" * 50)
